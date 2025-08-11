@@ -26,7 +26,7 @@ const prompt = ai.definePrompt({
   input: {schema: z.object({ideas: SummarizeBubbleInputSchema})},
   output: {schema: SummarizeBubbleOutputSchema},
   prompt: `You are an expert at summarizing ideas.
-  Given the following list of idea descriptions, create a concise summary that captures the core concept that unites them.  The summary should be one short paragraph.
+  Given the following list of idea descriptions, create a concise summary that captures the core concept that unites them. The summary should be a one liner description not exceeding four words.
 
   {{#each ideas}}
   - {{this}}
