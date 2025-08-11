@@ -1,6 +1,7 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
+import { getApps } from 'firebase-admin/app';
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   admin.initializeApp({
     // Since this will be running in a Google Cloud environment (App Hosting),
     // the SDK will automatically detect the project credentials.
