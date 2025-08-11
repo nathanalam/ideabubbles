@@ -23,16 +23,15 @@ export async function summarizeBubble(input: SummarizeBubbleInput): Promise<Summ
 
 const prompt = ai.definePrompt({
   name: 'summarizeBubblePrompt',
-  input: {schema: SummarizeBubbleInputSchema},
+  input: {schema: z.object({ideas: SummarizeBubbleInputSchema})},
   output: {schema: SummarizeBubbleOutputSchema},
   prompt: `You are an expert at summarizing ideas.
   Given the following list of idea descriptions, create a concise summary that captures the core concept that unites them.  The summary should be one short paragraph.
 
-  {% for idea in ideas %}
-  - {{idea}}
-  {% endfor %}
+  {{#each ideas}}
+  - {{this}}
+  {{/each}}
   `,
-  templateFormat: 'handlebars'
 });
 
 const summarizeBubbleFlow = ai.defineFlow(
