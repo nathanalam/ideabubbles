@@ -3,7 +3,6 @@
 import * as React from "react";
 import { clusterIdeas } from "@/ai/flows/cluster-ideas";
 import type { Bubble, Idea } from "@/types";
-import { nanoid } from "nanoid";
 import {
   Lightbulb,
   Loader2,
@@ -27,32 +26,33 @@ import { IdeaSubmissionDialog } from "@/components/idea-submission-dialog";
 import { IdeaDetailSheet } from "@/components/idea-detail-sheet";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-const MOCK_IDEAS: Idea[] = [
-  { id: 'idea-1', description: 'A platform for students to find part-time research opportunities at universities.', submitterInfo: 'alice@university.edu' },
-  { id: 'idea-2', description: 'An app that connects students with local companies for paid micro-internships.', submitterInfo: 'bob@institute.tech' },
-  { id: 'idea-3', description: 'AI-powered social media content generator for small businesses.', submitterInfo: 'charlie@college.com' },
-  { id: 'idea-4', description: 'A tool that automatically creates highlight reels from user-uploaded sports game footage.', submitterInfo: 'diana@stateu.edu' },
-  { id: 'idea-5', description: 'Marketplace for student freelancers to offer services like tutoring, design, and coding.', submitterInfo: 'eve@school.org' },
-  { id: 'idea-6', description: 'Automated content creation assistant that writes blog posts and social media updates based on a topic.', submitterInfo: 'frank@institute.tech' },
-];
-
+import { addIdea, getIdeas } from "./actions";
 
 export default function Home() {
-  const [ideas, setIdeas] = React.useState<Idea[]>(MOCK_IDEAS);
+  const [ideas, setIdeas] = React.useState<Idea[]>([]);
   const [bubbles, setBubbles] = React.useState<Bubble[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isClustering, setIsClustering] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedBubble, setSelectedBubble] = React.useState<Bubble | null>(null);
+
+  React.useEffect(() => {
+    async function loadIdeas() {
+      setIsLoading(true);
+      const fetchedIdeas = await getIdeas();
+      setIdeas(fetchedIdeas);
+      setIsLoading(false);
+    }
+    loadIdeas();
+  }, []);
 
   React.useEffect(() => {
     async function handleClustering() {
       if (ideas.length === 0) {
         setBubbles([]);
-        setIsLoading(false);
         return;
       }
-      setIsLoading(true);
+      setIsClustering(true);
       try {
         const result = await clusterIdeas({ ideas });
         const enrichedBubbles = result.bubbles.map((bubble) => ({
@@ -63,18 +63,19 @@ export default function Home() {
       } catch (error) {
         console.error("Failed to cluster ideas:", error);
       } finally {
-        setIsLoading(false);
+        setIsClustering(false);
       }
     }
     handleClustering();
   }, [ideas]);
 
-  const handleIdeaSubmit = (newIdeaData: { description: string; submitterInfo: string }) => {
-    const newIdea: Idea = {
-      id: nanoid(),
-      ...newIdeaData,
-    };
-    setIdeas((prevIdeas) => [...prevIdeas, newIdea]);
+  const handleIdeaSubmit = async (newIdeaData: { description: string; submitterInfo: string }) => {
+    try {
+        const newIdea = await addIdea(newIdeaData);
+        setIdeas((prevIdeas) => [...prevIdeas, newIdea]);
+    } catch (error) {
+        console.error("Failed to submit idea:", error);
+    }
   };
 
   const filteredBubbles = bubbles.filter(
@@ -84,6 +85,8 @@ export default function Home() {
         idea.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
   );
+
+  const showLoadingState = isLoading || isClustering;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -112,8 +115,8 @@ export default function Home() {
       </header>
       <main className="flex-1 p-4 md:p-8">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
+          {showLoadingState ? (
+            Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="flex flex-col">
                 <CardHeader>
                   <Skeleton className="h-6 w-3/4" />
@@ -135,7 +138,7 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-start gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <Lightbulb className="h-6 w-6 text-primary" />
+                        {isClustering ? <Loader2 className="h-6 w-6 text-primary animate-spin"/> : <Lightbulb className="h-6 w-6 text-primary" />}
                     </span>
                     <span className="flex-1">{bubble.theme}</span>
                   </CardTitle>
